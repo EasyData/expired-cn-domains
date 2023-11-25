@@ -20,11 +20,11 @@ jobs:
           for file in ${FILES[@]}
           do
             url=$BASE_URL/$file
-            wget -q -O $file $url
-            date=$(grep -m 1 -oP '\d{4}-\d{2}-\d{2}' $file)
+            wget -q -O /tmp/$file $url
+            date=$(grep -m 1 -oP '\d{4}-\d{2}-\d{2}' /tmp/$file)
             if (($? == 0)); then
               mkdir -p archives/$date
-              mv -v $file archives/$date
+              mv -v /tmp/$file archives/$date
             fi
           done
       - run: |
