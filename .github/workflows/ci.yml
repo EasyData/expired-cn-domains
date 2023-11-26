@@ -37,4 +37,34 @@ jobs:
             git commit -m "updated at $(date +%FT%T)"
             git push
           fi
+      - shell: bash
+        run: |
+          curl -sSL https://api.github.com/repos/${{ github.repository }}/commits/HEAD \
+            | jq -e 'now-(.commit.author.date|fromdateiso8601)<3600*36'
+      - if: ${{ failure() }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: github
+          payload: |
+            {
+              "attachments": [
+                {
+                  "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
+                  "title": "${{ github.repository }}",
+                  "title_link": "https://github.com/${{ github.repository }}",
+                  "text": "Too Bad",
+                  "fields": [
+                    {
+                      "title": "Status",
+                      "value": "${{ job.status }}",
+                      "short": true
+                    }
+                  ],
+                  "footer": "Github Actions",
+                  "footer_icon": "https://github.githubassets.com/favicon.ico"
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
