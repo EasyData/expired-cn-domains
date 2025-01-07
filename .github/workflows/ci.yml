@@ -17,8 +17,7 @@ jobs:
             future1todayDel.txt
             future2todayDel.txt
           )
-          for file in ${FILES[@]}
-          do
+          for file in ${FILES[@]}; do
             url=$BASE_URL/$file
             wget -q -O /tmp/$file $url
             date=$(grep -m 1 -oP '\d{4}-\d{2}-\d{2}' /tmp/$file)
@@ -42,7 +41,7 @@ jobs:
           curl -sSL https://api.github.com/repos/${{ github.repository }}/commits/HEAD \
             | jq -e 'now-(.commit.author.date|fromdateiso8601)<3600*36'
       - if: ${{ failure() }}
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v2.0.0
         with:
           channel-id: github
           payload: |
