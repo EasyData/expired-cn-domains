@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: |
+      - name: Download source files
+        run: |
           BASE_URL=https://www.cnnic.cn/NMediaFile/domain_list
           FILES=(
             1todayDel.txt
@@ -21,12 +22,24 @@ jobs:
             url=$BASE_URL/$file
             wget -q -O /tmp/$file $url
             date=$(grep -m 1 -oP '\d{4}-\d{2}-\d{2}' /tmp/$file)
+            year=$(cut -d- -f1 <<< $date)
             if (($? == 0)); then
-              mkdir -p archives/$date
-              mv -v /tmp/$file archives/$date
+              mkdir -p archives/$year/$date
+              mv -v /tmp/$file archives/$year/$date
             fi
           done
-      - run: |
+      - name: Archive old files
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          mkdir -p archives/{2024,2025,2026}
+          for year in 2024 2025 2026; do
+            for f in archives/${year}-*-*; do
+              git mv "$f" archives/${year}/
+            done
+          done
+      - name: Commit to current repo
+        run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
           if [[ -z "$(git status --porcelain)" ]]; then 
@@ -36,16 +49,19 @@ jobs:
             git commit -m "updated at $(date +%FT%T)"
             git push
           fi
-      - shell: bash
+      - name: Health check
+        shell: bash
         run: |
           curl -sSL https://api.github.com/repos/${{ github.repository }}/commits/HEAD \
             | jq -e 'now-(.commit.author.date|fromdateiso8601)<3600*36'
       - if: ${{ failure() }}
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v4.0.0
         with:
-          channel-id: github
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
             {
+              "channel": "github",
               "attachments": [
                 {
                   "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
@@ -64,6 +80,3 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
