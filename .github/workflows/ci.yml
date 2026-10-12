@@ -32,8 +32,8 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          mkdir -p archives/{2024,2025,2026}
-          for year in 2024 2025 2026; do
+          mkdir -p archives/{2023..2026}
+          for year in {2023..2026}; do
             for f in archives/${year}-*-*; do
               git mv "$f" archives/${year}/
             done
